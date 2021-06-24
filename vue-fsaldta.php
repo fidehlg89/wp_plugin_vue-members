@@ -27,6 +27,10 @@ add_shortcode('vue-fsa-team', 'handle_shortcode');
 
 wp_enqueue_script('vue-script', VUEFSALDTA_URL . 'includes/js/vue.js', [], '2.5.17');
 wp_enqueue_script('axios-script', VUEFSALDTA_URL . 'includes/js/axios.js', [], '0.21.1');
-wp_enqueue_script('fsa-team-frontend', VUEFSALDTA_URL . 'includes/Frontend.js', [], '0.1', true);
-wp_enqueue_script('fsa-team-admin', VUEFSALDTA_URL . 'includes/Admin.js', [], '0.1', true);
+wp_enqueue_script('fsa-mt-front-js', VUEFSALDTA_URL . 'includes/Frontend.js', [], '0.1', true);
+wp_enqueue_script('fsa-mt-admin-js', VUEFSALDTA_URL . 'includes/Admin.js', [], '0.1', true);
+
+//Adding styles
+wp_register_style( 'fsa-mt-front-style', VUEFSALDTA_URL . 'includes/css/frontend.css' );
+wp_enqueue_style( 'fsa-mt-front-style' );
 

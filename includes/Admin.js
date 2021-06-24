@@ -1,4 +1,5 @@
 (function() {
+    const mediaEndpoint = "/sites/fsaltda.com/wp-json/wp/v2/media";
     var vm = new Vue({
         el: document.querySelector('#app-admin'),
         template: //html
@@ -23,7 +24,7 @@
                         <tbody v-for="(item, index) in members">
                             <tr key={index}>
                                 <td>{{item.name}}</td>
-                                <td>{{item.shortdesc}}</td>
+                                <td>{{replace(item.shortdesc)}}</td>
                                 <td>{{item.resume}}</td>
                                 <td>
                                     <span class="edit">
@@ -41,7 +42,6 @@
                     <button class="button" @click="isAdding=false" label="Add new member">Go to the List</button>
                     <h3>{{action_text}} miembro:</h3>
                     <form id="fsa-team-form" @submit="save">
-                        <div class="container">
                             <div class="row">
                                 <label for="name">Entre Nombre:</label>
                                 <br/>
@@ -60,13 +60,15 @@
                             <div class="row">
                                 <label for="resume">Imagen:</label>
                                 <br/>
-                                <input id="file" class="regular-text" type="file" v-model="member.profile_url"/>
+                                <input type="file" @change='uploadImage' name="photo">
                             </div>
                             <div class="row">
                                 <!--button type="submit" class="button button-primary">{{ loadingText }}</button-->
                                 <button type="submit" class="button button-primary">Salvar</button>
                             </div>
-                        </div>
+                            <div>
+                                <img :src="file" style="height:40px; width:40px;"/>
+                            </div>
                         </form>
                         <div class="clear"></div>
                     </div>
@@ -78,88 +80,97 @@
             members: [],
             member: {},
             token: '',
-            posts: []
+            posts: [],
+            file: {}
         },
         mounted() {
             this.getToken();
-            this.fetchData();
+            this.update();
         },
         methods: {
             async getToken() {
                 var url = '/sites/fsaltda.com/wp-json/jwt-auth/v1/token';
                 try {
-                    var response = await fetch(url, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        method: "POST",
-                        body: JSON.stringify({
-                            "username": "adminfsa",
-                            "password": "Adminfsa*2021"
-                        })
+                    var { data } = await axios.post(url, {
+                        "username": "adminfsa",
+                        "password": "Adminfsa*2021"
                     });
-                    const data = await response.json();
                     this.token = data.token;
                 } catch (error) {
-                    console.error(error);
+                    alert(error);
                 }
             },
             async fetchData() {
-                var url = '/sites/fsaltda.com/wp-json/wp/v2/posts';
                 try {
-                    var response = await fetch(url);
-                    const data = await response.json();
+                    var { data } = await axios.get(mediaEndpoint);
                     this.members = [];
                     data.forEach(element => {
                         let item = {}
                         item.id = element.id;
-                        item.name = element.title.rendered;
-                        item.resume = this.limpiar(element.content.rendered);
+                        item.name = this.limpiar(element.title.rendered);
+                        item.shortdesc = this.limpiar(element.caption.rendered);
+                        item.resume = this.limpiar(element.description.rendered);
                         this.members.push(item);
                     });
                 } catch (error) {
                     alert(error);
                 }
             },
-            async save(e) {
-                e.preventDefault();
-                console.log(this.token);
-                var url = '/sites/fsaltda.com/wp-json/wp/v2/posts';
+            async deleteItem(item) {
                 try {
-                    await fetch(url, {
+                    var response = await axios.delete('/sites/fsaltda.com/wp-json/wp/v2/media/' + item.id + '?force=true', {
                         headers: {
-                            'Authorization': 'Bearer ' + this.token,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        method: "POST",
-                        body: JSON.stringify({ title: this.member.name, content: this.member.resume, status: 'publish' })
+                            Authorization: "Bearer " + this.token
+                        }
                     });
-                    await this.fetchData();
+                    console.log(response);
+                    this.update();
                 } catch (error) {
                     alert(error);
                 }
             },
-            async deleteItem(item) {
-                console.log(item);
-                var url = `/sites/fsaltda.com/wp-json/wp/v2/posts/${item.id}`;
+            async save(e) {
+                e.preventDefault();
+                const formData = new FormData();
+                this.member.image ? formData.append("file", this.member.image) : '';
+                this.member.name ? formData.append('title', this.member.name) : '';
+                this.member.shortdesc ? formData.append('caption', this.member.shortdesc) : '';
+                this.member.resume ? formData.append('description', this.member.resume) : '';
+
+                //send image to media library
                 try {
-                    await fetch(url, {
-                        headers: {
-                            'Authorization': `Bearer ${this.token}`,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        method: "DELETE"
+                    var response = await axios.post(mediaEndpoint, formData, {
+                        headers: { Authorization: "Bearer " + this.token }
                     });
-                    this.fetchData();
+                    console.log(response);
+                    //var data = await response.json();
+                    if (response.status == 201) {
+                        await this.update();
+                        this.isAdding = false;
+                        this.member = {}
+                    }
                 } catch (error) {
                     alert(error);
                 }
+            },
+            uploadImage(e) {
+                let file = e.target.files[0];
+                let reader = new FileReader();
+
+                this.member.image = file;
+
+                reader.onloadend = (file) => {
+                    //console.log('RESULT', reader.result)
+                    this.file = reader.result;
+                }
+                reader.readAsDataURL(file);
+                console.log(reader.readAsDataURL(file));
             },
             limpiar(value) {
                 return value.replace(/<\/?[^>]+(>|$)/g, "")
+            },
+            replace(value) {
+                return value.replace("&#8211;", "-")
             },
             update() {
                 this.fetchData();

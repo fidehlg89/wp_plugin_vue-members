@@ -1,37 +1,56 @@
 (function() {
-    const url = '/sites/fsaltda.com/';
+    const mediaEndpoint = "/sites/fsaltda.com/wp-json/wp/v2/media";
     var vm = new Vue({
         el: document.querySelector('#app-frontend'),
         template: //html
             `<div>
-                <h1>My Latest Posts</h1>
-                    <div>
-                        <p class="container" v-for="post in posts">
-                            <a v-bind:href="post.link">{{post.title.rendered}}</span></a>
-                        </p>
+                    <div id="fsa-tm">
+                        <ul class="fsa-tm-list cols" v-for="item in members">
+                            <li>
+                                <div class="thumnailbx">
+                                    <img :src="item.source_url"/>
+                                </div>
+                                <div class="titledesbox">
+                                    <span class="title">{{item.title.rendered}}</span>
+                                    <cite>{{replace(limpiar(item.caption.rendered))}}</cite>
+                                </div>
+                            </li>
+                        </ul>
+
                     </div>
             </div>
             `,
         data: {
-            posts: []
+            members: []
         },
         mounted() {
-            this.fetchPosts();
-            /*setInterval(function() {
-                this.fetchPosts();
-            }.bind(this), 5000);*/
+            this.fetchData();
         },
         methods: {
-            async fetchPosts() {
+            async fetchData() {
                 try {
-                    var response = await fetch(url + 'wp-json/wp/v2/posts');
-                    const data = await response.json();
-                    this.posts = data;
+                    var { data } = await axios.get(mediaEndpoint);
+                    console.log(data);
+                    this.members = data;
+                    /*data.forEach(element => {
+                        let item = {}
+                        item.id = element.id;
+                        item.name = element.title.rendered;
+                        item.shortdesc = this.limpiar(element.caption.rendered);
+                        item.resume = this.limpiar(element.description.rendered);
+                        this.members.push(item);
+                    });*/
+                    console.log(members);
                 } catch (error) {
                     console.error(error);
                 }
-
-            }
+            },
+            limpiar(value) {
+                return value.replace(/<\/?[^>]+(>|$)/g, "")
+            },
+            replace(value) {
+                return value.replace("&#8211;", "-")
+            },
         },
     });
 })();
