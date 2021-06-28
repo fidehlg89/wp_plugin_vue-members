@@ -1,5 +1,5 @@
 (function() {
-    const mediaEndpoint = "/sites/fsaltda.com/wp-json/wp/v2/media";
+    const mediaEndpoint = "/wp-json/wp/v2/media";
     var vm = new Vue({
         el: document.querySelector('#app-admin'),
         template: //html
@@ -95,7 +95,7 @@
         },
         methods: {
             async getToken() {
-                var url = '/sites/fsaltda.com/wp-json/jwt-auth/v1/token';
+                var url = '/wp-json/jwt-auth/v1/token';
                 try {
                     var { data } = await axios.post(url, {
                         "username": "adminfsa",
@@ -149,7 +149,7 @@
             },
             async deleteItem(item) {
                 try {
-                    var response = await axios.delete('/sites/fsaltda.com/wp-json/wp/v2/media/' + item.id + '?force=true', {
+                    var response = await axios.delete('/wp-json/wp/v2/media/' + item.id + '?force=true', {
                         headers: {
                             Authorization: "Bearer " + this.token
                         }

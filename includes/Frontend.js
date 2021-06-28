@@ -1,5 +1,5 @@
 (function() {
-    const mediaEndpoint = "/sites/fsaltda.com/wp-json/wp/v2/media";
+    const mediaEndpoint = "/wp-json/wp/v2/media";
     var vm = new Vue({
         el: document.querySelector('#app-frontend'),
         template: //html
