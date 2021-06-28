@@ -85,6 +85,7 @@
             isAdding: false,
             action_text: 'Añadir nuevo',
             members: [],
+            member: {},
             token: '',
             file: null
         },
@@ -141,7 +142,7 @@
                             });
                             tempdata = data;
                         }
-                    } catch {
+                    } catch (error) {
                         tempdata = [];
                     }
                 }
