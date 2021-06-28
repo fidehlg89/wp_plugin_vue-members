@@ -35,6 +35,9 @@
     width: 96%;
     min-height: 400px;
     padding: 30px;
-    background-color: #fff;
     margin-top: -5px;
+}
+
+.form-row {
+    display: flex;
 }

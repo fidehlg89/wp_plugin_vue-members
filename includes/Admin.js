@@ -5,10 +5,11 @@
         template: //html
             `
             <div>
-                <div class="container" v-if="isAdding!=true">
+                <div class="wp-container" v-if="isAdding!=true">
                     <h3 class="wp-heading-inline">Listado de miembros:</h3>
                     <!--button class="button" @click="update">Update List</button-->
                     <button class="button" @click="isAdding=true">Add new</button>
+                    <br/>
                     <!--p class="container" v-for="post in posts">
                         <a v-bind:href="post.link">{{post.title.rendered}}</span></a>
                     </p-->
@@ -42,46 +43,50 @@
                     <button class="button" @click="isAdding=false" label="Add new member">Go to the List</button>
                     <h3>{{action_text}} miembro:</h3>
                     <form id="fsa-team-form" @submit="save">
-                            <div class="row">
-                                <label for="name">Entre Nombre:</label>
-                                <br/>
-                                <input id="name" class="regular-text" type="text" v-model="member.name"/>
+                        <div class="form-row">
+                            <div class="col">
+                                <div class="row">
+                                    <label for="name">Entre Nombre:</label>
+                                    <br/>
+                                    <input id="name" class="regular-text" type="text" v-model="member.name"/>
+                                </div>
+                                <div class="row">
+                                    <label for="shortdesc">Descripción corta:</label>
+                                    <br/>
+                                    <input id="shortdesc" class="regular-text" type="text" v-model="member.shortdesc"/>
+                                </div>
+                                <div class="row">
+                                    <label for="resume">Descripción larga:</label>
+                                    <br/>
+                                    <textarea id="resume" class="regular-text" type="text" rows="8" v-model="member.resume"></textarea>
+                                </div>
+                                <div class="row">
+                                    <label for="resume">Imagen:</label>
+                                    <br/>
+                                    <input type="file" @change='uploadImage' name="photo">
+                                </div>
+                                <div class="row">
+                                    <!--button type="submit" class="button button-primary">{{ loadingText }}</button-->
+                                    <button type="submit" class="button button-primary">Salvar</button>
+                                </div>
                             </div>
-                            <div class="row">
-                                <label for="shortdesc">Descripción corta:</label>
-                                <br/>
-                                <input id="shortdesc" class="regular-text" type="text" v-model="member.shortdesc"/>
+                            <div class="col" style="margin-left: 10%;">
+                                <div class="member-image fsa-tm-list thumnailbx"  v-if="file!==null">
+                                    <img :src="file" />
+                                </div>
                             </div>
-                            <div class="row">
-                                <label for="resume">Descripción larga:</label>
-                                <br/>
-                                <textarea id="resume" class="regular-text" type="text" rows="8" v-model="member.resume"></textarea>
-                            </div>
-                            <div class="row">
-                                <label for="resume">Imagen:</label>
-                                <br/>
-                                <input type="file" @change='uploadImage' name="photo">
-                            </div>
-                            <div class="row">
-                                <!--button type="submit" class="button button-primary">{{ loadingText }}</button-->
-                                <button type="submit" class="button button-primary">Salvar</button>
-                            </div>
-                            <div>
-                                <img :src="file" style="height:40px; width:40px;"/>
-                            </div>
-                        </form>
-                        <div class="clear"></div>
-                    </div>
+                        </div>
+                    </form>
+                    <div class="clear"></div>
                 </div>
+            </div>
             `,
         data: {
             isAdding: false,
             action_text: 'Añadir nuevo',
             members: [],
-            member: {},
             token: '',
-            posts: [],
-            file: {}
+            file: null
         },
         mounted() {
             this.getToken();
@@ -100,20 +105,45 @@
                     alert(error);
                 }
             },
-            async fetchData() {
-                try {
-                    var { data } = await axios.get(mediaEndpoint);
-                    this.members = [];
-                    data.forEach(element => {
-                        let item = {}
+            async getData() {
+                let npage = 1;
+                let url = `${mediaEndpoint+'?page='+npage}&per_page=10`;
+                let { data } = await axios.get(url);
+                let tempdata = data;
+
+                this.members = [];
+                data.forEach(element => {
+                    if (element.alt_text == "fsa-vue-members") {
+                        let item = [];
                         item.id = element.id;
                         item.name = this.limpiar(element.title.rendered);
                         item.shortdesc = this.limpiar(element.caption.rendered);
                         item.resume = this.limpiar(element.description.rendered);
                         this.members.push(item);
-                    });
-                } catch (error) {
-                    alert(error);
+                    }
+                });
+
+                while (tempdata.length > 0) {
+                    npage++;
+                    let url = `${mediaEndpoint+'?page='+npage}&per_page=10`;
+                    try {
+                        let { data, status } = await axios.get(url);
+                        if (status == 201) {
+                            data.forEach(element => {
+                                if (element.alt_text == "fsa-vue-members") {
+                                    let item = [];
+                                    item.id = element.id;
+                                    item.name = this.limpiar(element.title.rendered);
+                                    item.shortdesc = this.limpiar(element.caption.rendered);
+                                    item.resume = this.limpiar(element.description.rendered);
+                                    this.members.push(item);
+                                }
+                            });
+                            tempdata = data;
+                        }
+                    } catch {
+                        tempdata = [];
+                    }
                 }
             },
             async deleteItem(item) {
@@ -136,6 +166,7 @@
                 this.member.name ? formData.append('title', this.member.name) : '';
                 this.member.shortdesc ? formData.append('caption', this.member.shortdesc) : '';
                 this.member.resume ? formData.append('description', this.member.resume) : '';
+                formData.append('alt_text', 'fsa-vue-members');
 
                 //send image to media library
                 try {
@@ -155,16 +186,17 @@
             },
             uploadImage(e) {
                 let file = e.target.files[0];
-                let reader = new FileReader();
 
-                this.member.image = file;
-
-                reader.onloadend = (file) => {
-                    //console.log('RESULT', reader.result)
-                    this.file = reader.result;
+                if (!/\.(jpg|svg|jpeg|png|bmp|gif)$/i.test(file.name)) {
+                    alert("seleccione una imagen valida");
+                } else {
+                    let reader = new FileReader();
+                    this.member.image = file;
+                    reader.onloadend = () => {
+                        this.file = reader.result;
+                    }
+                    reader.readAsDataURL(file);
                 }
-                reader.readAsDataURL(file);
-                console.log(reader.readAsDataURL(file));
             },
             limpiar(value) {
                 return value.replace(/<\/?[^>]+(>|$)/g, "")
@@ -173,8 +205,8 @@
                 return value.replace("&#8211;", "-")
             },
             update() {
-                this.fetchData();
-            }
+                this.getData();
+            },
         },
     });
 })();

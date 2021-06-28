@@ -34,3 +34,5 @@ wp_enqueue_script('fsa-mt-admin-js', VUEFSALDTA_URL . 'includes/Admin.js', [], '
 wp_register_style( 'fsa-mt-front-style', VUEFSALDTA_URL . 'includes/css/frontend.css' );
 wp_enqueue_style( 'fsa-mt-front-style' );
 
+wp_register_style( 'fsa-mt-admin-style', VUEFSALDTA_URL . 'includes/css/admin.css' );
+wp_enqueue_style( 'fsa-mt-admin-style' );

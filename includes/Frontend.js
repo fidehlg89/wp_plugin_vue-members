@@ -4,45 +4,73 @@
         el: document.querySelector('#app-frontend'),
         template: //html
             `<div>
-                    <div id="fsa-tm">
-                        <ul class="fsa-tm-list cols" v-for="item in members">
-                            <li>
-                                <div class="thumnailbx">
-                                    <img :src="item.source_url"/>
-                                </div>
-                                <div class="titledesbox">
-                                    <span class="title">{{item.title.rendered}}</span>
-                                    <cite>{{replace(limpiar(item.caption.rendered))}}</cite>
-                                </div>
-                            </li>
-                        </ul>
-
+                <div id="fsa-tm">
+                <ul class="fsa-tm-list cols" v-for="(item, index) in members">
+                <li key={{index}}>
+                    <div class="thumnailbx">
+                        <img :src="item.url"/>
                     </div>
+                    <div class="titledesbox">
+                        <span class="title">{{item.name}}</span>
+                        <cite>{{item.shortdesc}}</cite>
+                    </div>
+                </li>
+            </ul>
+                </div>
             </div>
             `,
         data: {
-            members: []
+            members: [],
         },
         mounted() {
-            this.fetchData();
+            this.getData();
         },
         methods: {
-            async fetchData() {
+            async getData() {
+                let npage = 1;
+                let url = `${mediaEndpoint+'?page='+npage}&per_page=10`;
+                let tempdata = [];
+
+                this.members = [];
                 try {
-                    var { data } = await axios.get(mediaEndpoint);
-                    console.log(data);
-                    this.members = data;
-                    /*data.forEach(element => {
-                        let item = {}
-                        item.id = element.id;
-                        item.name = element.title.rendered;
-                        item.shortdesc = this.limpiar(element.caption.rendered);
-                        item.resume = this.limpiar(element.description.rendered);
-                        this.members.push(item);
-                    });*/
-                    console.log(members);
+                    let { data } = await axios.get(url);
+                    tempdata = data;
+
+                    data.forEach(element => {
+                        if (element.alt_text == "fsa-vue-members") {
+                            let item = [];
+                            item.id = element.id;
+                            item.name = element.title.rendered;
+                            item.shortdesc = this.replace(this.limpiar(element.caption.rendered));
+                            item.resume = element.description.rendered;
+                            item.url = element.source_url;
+                            this.members.push(item);
+                        }
+                    });
                 } catch (error) {
-                    console.error(error);
+                    alert(error);
+                }
+
+                while (tempdata.length > 0) {
+                    npage++;
+                    let url = `${mediaEndpoint+'?page='+npage}&per_page=10`;
+                    try {
+                        let { data } = await axios.get(url);
+                        data.forEach(element => {
+                            if (element.alt_text == "fsa-vue-members") {
+                                let item = [];
+                                item.id = element.id;
+                                item.name = element.title.rendered;
+                                item.shortdesc = this.replace(this.limpiar(element.caption.rendered));
+                                item.resume = element.description.rendered;
+                                item.url = element.source_url;
+                                this.members.push(item);
+                            }
+                        });
+                        tempdata = data;
+                    } catch {
+                        tempdata = [];
+                    }
                 }
             },
             limpiar(value) {
